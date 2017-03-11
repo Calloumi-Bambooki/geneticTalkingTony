@@ -1,27 +1,34 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 /**
  * Created by bramreth on 3/10/17.
  */
 public class TalkingTony {
-    private String tempGeneration= "";
     private String target;
     private int fitness, topFitness, gen = 0;
+    private String[] oldFamily = new String[5];
+    private String[] newFamily = new String[5];
+    
     public TalkingTony(String target){
         this.target = target;
-        for(int x = 0; x < target.length(); x++) {
-            tempGeneration += ( (char) (32 + (new Random()).nextInt(95)) );
+        Arrays.fill(oldFamily, "");
+        for(int i = 0; i < oldFamily.length; i++) {
+            for (int x = 0; x < target.length(); x++) {
+                oldFamily[i] += ((char) (32 + (new Random()).nextInt(95)));
+            }
         }
-        String topGen = tempGeneration;
         while(fitness < target.length()*3){
-            tempGeneration = mutate(topGen, fitness);
-            fitness = calcFitness(tempGeneration);
-            if(fitness > topFitness){
-                topGen = tempGeneration;
+            for (int i=0; i<newFamily.length; i++)
+                newFamily[i] = mutate(oldFamily, fitness);
+            newFamily = sort(newFamily);
+            fitness = calcFitness(newFamily[0]);
+            if(fitness > topFitness) {
                 topFitness = fitness;
                 gen++;
-                System.out.println("Gen: " + (gen+1) + " | Fitness: " + fitness + " | " + tempGeneration);
+                System.out.println("Gen: " + (gen + 1) + " | Fitness: " + fitness + " | " + newFamily[0]);
+                oldFamily = newFamily;
             }
         }
     }
@@ -41,16 +48,49 @@ public class TalkingTony {
         return fitnessResult;
     }
 
-    private String mutate(String target, int rate){
-        String creation = "";
+    private String mutate(String[] oldFamily, int rate){
+        Random r = new Random();
+        String mother = oldFamily[r.nextInt(3)];
+        String father = oldFamily[r.nextInt(3)];
+        String child = "";
         for(int x = 0; x < target.length(); x++) {
-            Random r = new Random();
             if(r.nextInt(target.length()*3)<rate) {
-                creation += target.charAt(x);
-            }else{
-                creation += (char) (new Random().nextInt(126) + 1);
+                if (r.nextInt(1)==1)
+                    child += mother.charAt(x);
+                else
+                    child += father.charAt(x);
+                    
             }
+            else
+                child += (char) (new Random().nextInt(126) + 1);
         }
-        return creation;
+        return child;
+    }
+    
+    private String[] sort(String[] in) {
+        String[] result = new String[in.length];
+        Boolean[] done = new Boolean[in.length];
+        Arrays.fill(done, false);
+        int best;
+        for (int i=0; i<in.length; i++) {
+            best=-1;
+            for (int j=0; j<in.length; j++) {
+                if (best==-1) {
+                    if (done[j])
+                        continue;
+                    else {
+                        best=j;
+                        done[j]=true;
+                    }
+                }
+                else if (calcFitness(in[best]) < calcFitness(in[j])) {
+                    done[best] = false;
+                    done[j] = true;
+                    best = j;
+                }
+            }
+            result[i]=in[best];
+        }
+        return result;
     }
 }
